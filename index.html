@@ -1,32 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>tracker</title>
+<meta charset="utf-8">
+<title>GPS LOGGER</title>
 </head>
+
 <body>
 
-<h1>GPS Test</h1>
+<h1>GPS LOGGER</h1>
 
 <button onclick="start()">START</button>
+<button onclick="saveCSV()">SAVE CSV</button>
+
+<div id="log"></div>
 
 <script>
 
+let records = [];
+
+function log(text) {
+  document.getElementById("log").innerHTML += "<p>" + text + "</p>";
+}
+
 function start() {
 
-  navigator.geolocation.watchPosition(pos => {
+  log("tracking started");
 
-    console.log(pos.coords.latitude);
-    console.log(pos.coords.longitude);
+  navigator.geolocation.watchPosition(
 
-    document.body.innerHTML +=
-      "<p>" +
-      pos.coords.latitude +
-      "," +
-      pos.coords.longitude +
-      "</p>";
+    function(pos) {
+
+      const time = new Date().toISOString();
+
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const speed = pos.coords.speed;
+
+      records.push({
+        time,
+        lat,
+        lon,
+        speed
+      });
+
+      log(
+        time +
+        " LAT:" + lat +
+        " LON:" + lon +
+        " SPD:" + speed
+      );
+
+    },
+
+    function(err) {
+      log("ERROR: " + err.message);
+    },
+
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+
+  );
+
+}
+
+function saveCSV() {
+
+  let csv =
+    "time,lat,lon,speed\n";
+
+  records.forEach(r => {
+
+    csv +=
+      r.time + "," +
+      r.lat + "," +
+      r.lon + "," +
+      r.speed + "\n";
 
   });
+
+  const blob =
+    new Blob([csv], { type: "text/csv" });
+
+  const url =
+    URL.createObjectURL(blob);
+
+  const a =
+    document.createElement("a");
+
+  a.href = url;
+
+  a.download = "gps_log.csv";
+
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  log("CSV saved");
 
 }
 
